@@ -1,4 +1,43 @@
-alias: Alarmo - ZHA Xfinity and Alarmo Synchronization
+######################################################################################################
+##                           ZHA / Xfinity and Alarmo Synchronization                               ##
+######################################################################################################
+
+######################################################################################################
+## This automation will integrate a Xfinity XHK1-UE ZigBee Wireless Keypad with Alarmo HACS addon.  ##
+## It allows you to arm and disarm Alarmo via the keypad using the Alarmo passwords and not the     ##
+## Keypad password configured in ZHA. It  will also sync the keypad state with Alarmo.              ##
+##                                                                                                  ##
+## Pre-requisites:                                                                                  ##
+##                                                                                                  ##
+## 1) Alarmo Custom Integration installed and configured:                                           ##
+##   - MQTT Enabled and configured to require a code for arming and disarming.                      ##
+##   - Armed away, Armed home, and Armed night Modes configured.                                    ##
+##   - At least one Pincode configured.                                                             ##
+## 2) Mosquito broker installed and configured.                                                     ##
+## 3) An Zigbee Xfinity XHK1-UE configured in ZHA.                                                  ##
+##    - In ZHA configuration, set the Master code for the alarm control panel to 00000 and the      ##
+##      number of consecutive failed code entries to trigger an alarm to 1000 (found in Devices,    ##
+##      ZHA, Configure, at the bottom of the Network tab in the "Alarm Control Panel Options"       ##
+##      section). Don't worry, the automation is not using this feature.                            ##
+## 4) An correctly configured notify service.                                                       ##
+##                                                                                                  ##
+## What the automation does:                                                                        ##
+##                                                                                                  ##
+## - Enable you to use the Keypad to Arm and Disarm Alarmo using the codes configured in Alarmo.    ##
+## - Enable Alarmo to sync its state with the Keypad.                                               ##
+## - Send notifications when the Alarm is Armed, Disarmed or is Arming, and when an invalid         ##
+##   password is used or the Alarm failed to arm because a sensor was triggered.                    ##
+##                                                                                                  ##
+## The automation:                                                                                  ##
+##                                                                                                  ##
+## IMPORTANT: Replace <replace me for your Keypad ieee>, <replace me for your Keypad device_id>     ##
+## and <replace me for your correct entity_id> for your device IEEE, device_id, entity_id, and      ##
+## set the keypad Master code for the alarm control panel to 00000 (found in Devices, ZHA,          ##
+## Configure, at the bottom of the Network tab in the "Alarm Control Panel Options" section).       ##
+######################################################################################################
+
+alias: ZHA Xfinity and Alarmo Synchronization
+id: 'zha_xfinity_and_alarmo_synchronization'
 description: >-
   This automation will integrate a Xfinity XHK1-UE ZigBee Wireless Keypad with
   Alarmo HACS addon. It allows you to arm and disarm Alarmo via the keypad
