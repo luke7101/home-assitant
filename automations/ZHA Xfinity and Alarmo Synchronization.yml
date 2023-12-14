@@ -1,0 +1,296 @@
+alias: Alarmo - ZHA Xfinity and Alarmo Synchronization
+description: >-
+  This automation will integrate a Xfinity XHK1-UE ZigBee Wireless Keypad with
+  Alarmo HACS addon. It allows you to arm and disarm Alarmo via the keypad
+  using the Alarmo passwords and not the Keypad password configured in ZHA. It
+  will also sync the keypad state with Alarmo.
+trigger:
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_ieee: <replace me for your Keypad ieee>
+      args:
+        arm_mode_description: Disarm
+    id: disarm
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_ieee: <replace me for your Keypad ieee>
+      args:
+        arm_mode_description: Arm_Day_Home_Only
+    id: arm_home
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_ieee: <replace me for your Keypad ieee>
+      args:
+        arm_mode_description: Arm_All_Zones
+    id: arm_away
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_ieee: <replace me for your Keypad ieee>
+      args:
+        arm_mode_description: Arm_Night_Sleep_Only
+    id: arm_night
+  - platform: mqtt
+    topic: alarmo/state
+    id: alarmo_state_disarmed
+    payload: disarmed
+  - platform: mqtt
+    topic: alarmo/state
+    id: alarmo_state_armed_home
+    payload: armed_home
+  - platform: mqtt
+    topic: alarmo/state
+    id: alarmo_state_armed_away
+    payload: armed_away
+  - platform: mqtt
+    topic: alarmo/state
+    id: alarmo_state_armed_night
+    payload: armed_night
+  - platform: mqtt
+    topic: alarmo/state
+    id: alarmo_state_armed_arming
+    payload: arming
+  - platform: mqtt
+    topic: alarmo/event
+    id: alarmo_state_invalid_code
+    payload: INVALID_CODE_PROVIDED
+    value_template: "{{ value_json.event }}"
+  - platform: mqtt
+    topic: alarmo/event
+    id: alarmo_failed_to_arm
+    payload: FAILED_TO_ARM
+    value_template: "{{ value_json.event }}"
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: disarm
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: <replace me for your Keypad device_id>
+                domain: alarm_control_panel
+                entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                type: is_disarmed
+        sequence:
+          - service: mqtt.publish
+            data:
+              topic: alarmo/command
+              payload_template: >-
+                { "command": "DISARM", "code": "{{ trigger.event.data.args.code
+                }}" }
+      - conditions:
+          - condition: trigger
+            id: arm_home
+        sequence:
+          - service: mqtt.publish
+            data:
+              topic: alarmo/command
+              payload_template: >-
+                { "command": "ARM_HOME", "code": "{{
+                trigger.event.data.args.code }}" }
+      - conditions:
+          - condition: trigger
+            id: arm_away
+        sequence:
+          - service: mqtt.publish
+            data:
+              topic: alarmo/command
+              payload_template: >-
+                { "command": "ARM_AWAY", "code": "{{
+                trigger.event.data.args.code }}" }
+      - conditions:
+          - condition: trigger
+            id: arm_night
+        sequence:
+          - service: mqtt.publish
+            data:
+              topic: alarmo/command
+              payload_template: >-
+                { "command": "ARM_NIGHT", "code": "{{
+                trigger.event.data.args.code }}" }
+    default: []
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: alarmo_state_disarmed
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: <replace me for your Keypad device_id>
+                domain: alarm_control_panel
+                entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                type: is_disarmed
+        sequence:
+          - device_id: <replace me for your Keypad device_id>
+            domain: alarm_control_panel
+            entity_id: alarm_control_panel.<replace me for your correct entity_id>
+            type: disarm
+            code: "00000"
+          - service: notify.notify
+            data:
+              message: clear_notification
+              data:
+                tag: alarmo
+          - service: notify.notify
+            data:
+              title: Alarmo
+              message: Home alarm Disarmed.
+              data:
+                tag: alarmo
+      - conditions:
+          - condition: trigger
+            id: alarmo_state_armed_home
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: <replace me for your Keypad device_id>
+                domain: alarm_control_panel
+                entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                type: is_armed_home
+        sequence:
+          - device_id: <replace me for your Keypad device_id>
+            domain: alarm_control_panel
+            entity_id: alarm_control_panel.<replace me for your correct entity_id>
+            type: arm_home
+            code: "00000"
+          - service: notify.notify
+            data:
+              message: clear_notification
+              data:
+                tag: alarmo
+          - service: notify.notify
+            data:
+              title: Alarmo
+              message: Home alarm Armed Home.
+              data:
+                tag: alarmo
+      - conditions:
+          - condition: trigger
+            id: alarmo_state_armed_away
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: <replace me for your Keypad device_id>
+                domain: alarm_control_panel
+                entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                type: is_armed_away
+        sequence:
+          - device_id: <replace me for your Keypad device_id>
+            domain: alarm_control_panel
+            entity_id: alarm_control_panel.<replace me for your correct entity_id>
+            type: arm_away
+            code: "00000"
+          - service: notify.notify
+            data:
+              message: clear_notification
+              data:
+                tag: alarmo
+          - service: notify.notify
+            data:
+              title: Alarmo
+              message: Home alarm Armed Away.
+              data:
+                tag: alarmo
+      - conditions:
+          - condition: trigger
+            id: alarmo_state_armed_night
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: <replace me for your Keypad device_id>
+                domain: alarm_control_panel
+                entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                type: is_armed_night
+        sequence:
+          - device_id: <replace me for your Keypad device_id>
+            domain: alarm_control_panel
+            entity_id: alarm_control_panel.<replace me for your correct entity_id>
+            type: arm_night
+            code: "00000"
+          - service: notify.notify
+            data:
+              message: clear_notification
+              data:
+                tag: alarmo
+          - service: notify.notify
+            data:
+              title: Alarmo
+              message: Home alarm Armed Night.
+              data:
+                tag: alarmo
+      - conditions:
+          - condition: trigger
+            id: alarmo_state_armed_arming
+        sequence:
+          - service: notify.notify
+            data:
+              title: Alarmo
+              message: Home alarm is arming.
+              data:
+                tag: alarmo
+      - conditions:
+          - condition: trigger
+            id: alarmo_state_invalid_code
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: <replace me for your Keypad device_id>
+                domain: alarm_control_panel
+                entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                type: is_disarmed
+        sequence:
+          - device_id: <replace me for your Keypad device_id>
+            domain: alarm_control_panel
+            entity_id: alarm_control_panel.<replace me for your correct entity_id>
+            type: disarm
+            code: "00000"
+          - service: notify.notify
+            data:
+              message: clear_notification
+              data:
+                tag: alarmo
+          - service: notify.notify
+            data:
+              title: Alarmo
+              message: An invalid code was used to arm or disarm the Home Alarm.
+              data:
+                tag: alarmo
+      - conditions:
+          - condition: trigger
+            id: alarmo_failed_to_arm
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: <replace me for your Keypad device_id>
+                domain: alarm_control_panel
+                entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                type: is_disarmed
+        sequence:
+          - device_id: <replace me for your Keypad device_id>
+            domain: alarm_control_panel
+            entity_id: alarm_control_panel.<replace me for your correct entity_id>
+            type: disarm
+            code: "00000"
+          - service: notify.notify
+            data:
+              message: clear_notification
+              data:
+                tag: alarmo
+          - service: notify.notify
+            data:
+              title: Alarmo
+              message: >-
+                Home Alarm failed to arm because of the following sensors: {%
+                for open_sensor in trigger.payload_json.sensors %}
+                  {{ open_sensor.name }}
+                {% endfor %}
+              data:
+                tag: alarmo
+    default: []
+mode: parallel
+max: 2
