@@ -1,0 +1,16 @@
+alias: xfinity_beeping
+sequence:
+  - service: zha.issue_zigbee_cluster_command
+    data:
+      cluster_type: out
+      ieee: <replace me for your Keypad ieee>
+      endpoint_id: 1
+      cluster_id: 1281
+      command: 4
+      command_type: client
+      params:
+        panel_status: 5
+        seconds_remaining: 1
+        audible_notification: 1
+        alarm_status: 0
+mode: single
