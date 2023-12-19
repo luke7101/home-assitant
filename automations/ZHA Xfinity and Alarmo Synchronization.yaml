@@ -5,14 +5,15 @@
 ######################################################################################################
 ## This automation will integrate a Xfinity XHK1-UE ZigBee Wireless Keypad with Alarmo HACS addon.  ##
 ## It allows you to arm and disarm Alarmo via the keypad using the Alarmo passwords and not the     ##
-## Keypad password configured in ZHA. It  will also sync the keypad state with Alarmo.              ##
+## Keypad password configured in ZHA. It will also sync the keypad state with Alarmo.               ##
 ##                                                                                                  ##
 ## Pre-requisites:                                                                                  ##
 ##                                                                                                  ##
 ## 1) Alarmo Custom Integration installed and configured:                                           ##
-##   - MQTT Enabled and configured to require a code for arming and disarming.                      ##
-##   - Armed away, Armed home, and Armed night Modes configured.                                    ##
-##   - At least one Pincode configured.                                                             ##
+##    - MQTT Enabled and configured to require a code for arming and disarming.                     ##
+##    - Armed away, Armed home, and Armed night Modes configured.                                   ##
+##    - At least one 4 digits Pincode configured.                                                   ##
+##    - Options to require code for arming, disarming and switching mode activated.                 ##
 ## 2) Mosquito broker installed and configured.                                                     ##
 ## 3) An Zigbee Xfinity XHK1-UE configured in ZHA.                                                  ##
 ##    - In ZHA configuration, set the Master code for the alarm control panel to 00000 and the      ##
@@ -31,9 +32,10 @@
 ## The automation:                                                                                  ##
 ##                                                                                                  ##
 ## IMPORTANT: Replace <replace me for your Keypad ieee>, <replace me for your Keypad device_id>     ##
-## and <replace me for your correct entity_id> for your device IEEE, device_id, entity_id, and      ##
-## set the keypad Master code for the alarm control panel to 00000 (found in Devices, ZHA,          ##
-## Configure, at the bottom of the Network tab in the "Alarm Control Panel Options" section).       ##
+## and <replace me for your correct entity_id> for your device IEEE, device_id, entity_id,          ##
+## <replace me for your Alarmo device_id> for your Alarmo device_id, and set the keypad Master      ##
+## code for the alarm control panel to 00000 (found in Devices, ZHA, Configure, at the bottom       ##
+## of the Network tab in the "Alarm Control Panel Options" section).                                ##
 ######################################################################################################
 
 alias: ZHA Xfinity and Alarmo Synchronization
@@ -102,6 +104,10 @@ trigger:
     id: alarmo_failed_to_arm
     payload: FAILED_TO_ARM
     value_template: "{{ value_json.event }}"
+  - platform: mqtt
+    topic: alarmo/state
+    id: alarmo_state_pending
+    payload: pending
 condition: []
 action:
   - choose:
@@ -211,13 +217,6 @@ action:
       - conditions:
           - condition: trigger
             id: alarmo_state_armed_away
-          - condition: not
-            conditions:
-              - condition: device
-                device_id: <replace me for your Keypad device_id>
-                domain: alarm_control_panel
-                entity_id: alarm_control_panel.<replace me for your correct entity_id>
-                type: is_armed_away
         sequence:
           - device_id: <replace me for your Keypad device_id>
             domain: alarm_control_panel
@@ -266,6 +265,8 @@ action:
           - condition: trigger
             id: alarmo_state_armed_arming
         sequence:
+          - service: script.xfinity_beeping
+            data: {}
           - service: notify.notify
             data:
               title: Alarmo
@@ -275,12 +276,19 @@ action:
       - conditions:
           - condition: trigger
             id: alarmo_state_invalid_code
-          - condition: not
+          - condition: and
             conditions:
+              - condition: not
+                conditions:
+                  - condition: device
+                    device_id: <replace me for your Keypad device_id>
+                    domain: alarm_control_panel
+                    entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                    type: is_disarmed
               - condition: device
-                device_id: <replace me for your Keypad device_id>
+                device_id: <replace me for your Alarmo device_id>
                 domain: alarm_control_panel
-                entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                entity_id: alarm_control_panel.alarmo
                 type: is_disarmed
         sequence:
           - device_id: <replace me for your Keypad device_id>
@@ -330,6 +338,19 @@ action:
                 {% endfor %}
               data:
                 tag: alarmo
+      - conditions:
+          - condition: trigger
+            id: alarmo_state_pending
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: <replace me for your Keypad device_id>
+                domain: alarm_control_panel
+                entity_id: alarm_control_panel.<replace me for your correct entity_id>
+                type: is_disarmed
+        sequence:
+          - service: script.xfinity_beeping
+            data: {}
     default: []
 mode: parallel
 max: 2
